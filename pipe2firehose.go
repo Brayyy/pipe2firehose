@@ -1,3 +1,19 @@
+// Copyright 2018 Bray Almini. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// pipe2firehose is a simple tool to pipe data from stdin and push into
+// AWS Kinesis Firehose or Kinesis Stream.
 package main
 
 import (
@@ -16,7 +32,8 @@ import (
 var (
 	awsRegion          = flag.String("region", "", "AWS Region of Firehose")
 	delayLine          = flag.String("delay", "", "Time in ms to wait between each line read")
-	maxBatchSize       = flag.Int("max-batch-size", 500, "...")
+	printVersion       = flag.Bool("version", false, "Print the version")
+	batchSize          = flag.Int("batch-size", 500, "Modify the number of records included per PutRecordBatch")
 	awsSession         *session.Session
 	awsFirehose        *firehose.Firehose
 	firehoseRecords    []*firehose.Record
@@ -24,7 +41,18 @@ var (
 	totalRecords       = 0
 	lastPushCount      = 0
 	startTime          = time.Now()
+	version            = "master"
 )
+
+var usageText = `pipe2firehose version %s
+
+Usage:
+  cat data.json | pipe2firehose [options] [firehose-name]
+or
+  pipe2firehose [options] [firehose-name] < data.json
+
+Options:
+`
 
 func connectFirehose() {
 	// fmt.Println("connectFirehose()")
@@ -64,7 +92,7 @@ func pushFirehose(line string) {
 	)
 	numRecords := len(firehoseRecords)
 	// fmt.Printf("pushFirehose() numRecords: %v\n", numRecords)
-	if numRecords == *maxBatchSize {
+	if numRecords == *batchSize {
 		flushFirehose()
 	}
 }
@@ -84,9 +112,18 @@ func echoStats() {
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprint(os.Stderr, fmt.Sprintf(usageText, version))
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	args := flag.Args()
+
+	if *printVersion {
+		fmt.Println("pipe2firehose version " + version)
+		os.Exit(0)
+	}
 
 	if len(args) == 0 {
 		fmt.Println("Firehose name required")

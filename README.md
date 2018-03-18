@@ -2,20 +2,21 @@
 
 A simple tool to pipe data from stdin and push into AWS Kinesis Firehose or Kinesis Stream.
 
-```bash
-# Pipe Data in
-cat my-data.json | pipe2firehose my-fire-hose
-# Or redirect from file
-pipe2firehose my-fire-hose < my-data.json
+```
+Usage:
+  cat data.json | pipe2firehose [options] [firehose-name]
+or
+  pipe2firehose [options] [firehose-name] < data.json
 
-pipe2firehose -help
-# Usage of pipe2firehose:
-#   -delay string
-#     	Time in ms to wait between each line read
-#   -max-batch-size int
-#     	... (default 500)
-#   -region string
-#     	AWS Region of Firehose
+Options:
+  -batch-size int
+    	Modify the number of records included per PutRecordBatch (default 500)
+  -delay string
+    	Time in ms to wait between each line read
+  -region string
+    	AWS Region of Firehose
+  -version
+    	Print the version
 ```
 
 The `-delay` option is helpful if you are trying to slowly feed data into Kinesis over a long period of time rather than blast the whole file all at once.
